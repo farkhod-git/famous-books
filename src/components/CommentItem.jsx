@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Reply, ChevronDown, ChevronRight, CornerDownRight, Trash2, Loader } from "lucide-react";
+import {
+  Reply, ChevronDown, ChevronRight, CornerDownRight, Trash2, Loader, Ban,
+} from "lucide-react";
 import Avatar from "./Avatar";
 import CommentComposer from "./CommentComposer";
 import AuthImage from "./AuthImage";
@@ -25,6 +27,7 @@ export default function CommentItem({
   const replies = comment.replies || [];
   const replyCount = countComments(replies);
   const showReplies = !collapsed.has(comment.id);
+  const isDeleted = Boolean(comment.deleted);
   const isMine = currentUserId && comment.createdBy?.id === currentUserId;
 
   async function handleReply(content) {
@@ -48,14 +51,24 @@ export default function CommentItem({
   return (
     <li className="comment" data-depth={Math.min(depth, MAX_INDENT_DEPTH)}>
       <div className="comment-row">
-        <Avatar profile={comment.createdBy} size={depth > 0 ? 28 : 34} />
+        {isDeleted ? (
+          <span className="comment-deleted-avatar" style={{ width: depth > 0 ? 28 : 34, height: depth > 0 ? 28 : 34 }}>
+            <Ban size={depth > 0 ? 13 : 15} />
+          </span>
+        ) : (
+          <Avatar profile={comment.createdBy} size={depth > 0 ? 28 : 34} />
+        )}
 
         <div className="comment-main">
           <div className="comment-head">
-            <span className="comment-author">
-              {fullName(comment.createdBy)}
-              {isMine && <span className="comment-badge">Siz</span>}
-            </span>
+            {isDeleted ? (
+              <span className="comment-author comment-author-deleted">O'chirilgan</span>
+            ) : (
+              <span className="comment-author">
+                {fullName(comment.createdBy)}
+                {isMine && <span className="comment-badge">Siz</span>}
+              </span>
+            )}
             <time className="comment-time" title={formatDateTime(comment.createdAt)}>
               {formatRelative(comment.createdAt)}
             </time>
@@ -67,24 +80,34 @@ export default function CommentItem({
             </span>
           )}
 
-          <p className="comment-content">{comment.content}</p>
+          {isDeleted ? (
+            <p className="comment-content comment-content-deleted">
+              Bu izoh muallifi tomonidan o'chirilgan
+            </p>
+          ) : (
+            <>
+              <p className="comment-content">{comment.content}</p>
 
-          {comment.file?.id && (
-            <AuthImage
-              attachmentId={comment.file.id}
-              alt={comment.file.originalName || "Ilova"}
-              className="comment-attachment"
-            />
+              {comment.file?.id && (
+                <AuthImage
+                  attachmentId={comment.file.id}
+                  alt={comment.file.originalName || "Ilova"}
+                  className="comment-attachment"
+                />
+              )}
+            </>
           )}
 
           <div className="comment-tools">
-            <button
-              type="button"
-              className={`comment-tool ${replying ? "active" : ""}`}
-              onClick={() => setReplying((prev) => !prev)}
-            >
-              <Reply size={14} /> Javob berish
-            </button>
+            {!isDeleted && (
+              <button
+                type="button"
+                className={`comment-tool ${replying ? "active" : ""}`}
+                onClick={() => setReplying((prev) => !prev)}
+              >
+                <Reply size={14} /> Javob berish
+              </button>
+            )}
 
             {replyCount > 0 && (
               <button
@@ -97,7 +120,7 @@ export default function CommentItem({
               </button>
             )}
 
-            {isMine && !confirming && (
+            {isMine && !isDeleted && !confirming && (
               <button
                 type="button"
                 className="comment-tool danger"

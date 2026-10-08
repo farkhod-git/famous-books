@@ -5,7 +5,7 @@ import CommentComposer from "./CommentComposer";
 import { getComments, createComment, deleteComment } from "../api/comments";
 import { useAuth } from "../hooks/useAuth";
 import {
-  normalizeComments, insertComment, removeComment, countComments, collectParentIds,
+  normalizeComments, insertComment, markDeleted, countComments, collectParentIds,
 } from "../lib/commentTree";
 
 const PAGE_SIZE = 20;
@@ -102,8 +102,10 @@ export default function CommentSection({ postId, onCountChange }) {
 
   async function handleDelete(commentId) {
     await deleteComment(postId, commentId);
+
+    /* Backend soft delete qiladi — izoh o'rnida turadi, javoblari saqlanadi. */
     setTree((prev) => {
-      const next = removeComment(prev, commentId);
+      const next = markDeleted(prev, commentId);
       onCountChangeRef.current?.(countComments(next));
       return next;
     });

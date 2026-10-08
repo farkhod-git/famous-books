@@ -2341,3 +2341,25 @@ body {
   font-weight: 800;
   color: var(--primary);
 }
+
+/* O'CHIRILGAN IZOH */
+.comment-deleted-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+}
+
+.comment-author-deleted {
+  font-weight: 600;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.comment-content-deleted {
+  font-style: italic;
+  color: var(--text-muted);
+}

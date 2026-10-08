@@ -25,18 +25,25 @@ export function insertComment(tree, parentId, comment) {
   });
 }
 
-/** Izohni (va uning javoblarini) daraxtdan olib tashlaydi. */
-export function removeComment(tree, id) {
-  return tree
-    .filter((node) => node.id !== id)
-    .map((node) =>
-      node.replies.length ? { ...node, replies: removeComment(node.replies, id) } : node
-    );
+/**
+ * Izohni o'chirilgan deb belgilaydi. Backend soft delete qiladi — qator
+ * qoladi, shuning uchun javoblari ham joyida turishi kerak.
+ */
+export function markDeleted(tree, id) {
+  return tree.map((node) => {
+    if (node.id === id) {
+      return { ...node, deleted: true, content: null, file: null };
+    }
+    return node.replies.length ? { ...node, replies: markDeleted(node.replies, id) } : node;
+  });
 }
 
-/** Ildiz + barcha javoblar soni. */
+/** Haqiqiy (o'chirilmagan) izohlar soni — o'chirilganlar sanalmaydi. */
 export function countComments(tree) {
-  return tree.reduce((total, node) => total + 1 + countComments(node.replies), 0);
+  return tree.reduce(
+    (total, node) => total + (node.deleted ? 0 : 1) + countComments(node.replies),
+    0
+  );
 }
 
 /** Javoblari bor izohlar ID si (yig'ish/ochish uchun). */
