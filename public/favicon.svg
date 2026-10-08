@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Kitob tanasi -->
+  <path d="M4.5 2H24a5 5 0 0 1 5 5v18a5 5 0 0 1-5 5H4.5A1.5 1.5 0 0 1 3 28.5v-25A1.5 1.5 0 0 1 4.5 2Z" fill="#15803d"/>
+  <!-- Tikilgan qirra -->
+  <path d="M4.5 2H9v28H4.5A1.5 1.5 0 0 1 3 28.5v-25A1.5 1.5 0 0 1 4.5 2Z" fill="#14532d"/>
+  <path d="M5.1 6.5v19M7.1 6.5v19" stroke="#ffffff" stroke-opacity=".45" stroke-width="1" stroke-linecap="round"/>
+  <!-- Yulduz -->
+  <path d="M19 9.2l1.55 4.17 4.45.2-3.48 2.77 1.19 4.29L19 18.17l-3.71 2.46 1.19-4.29-3.48-2.77 4.45-.2L19 9.2Z" fill="#fbbf24"/>
+</svg>
