@@ -1,0 +1,71 @@
+name: Deploy frontend
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:        # qo'lda ham ishga tushirish mumkin
+
+# Ketma-ket push bo'lsa, ikkita deploy bir-birining ustiga chiqmasin
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+env:
+  REMOTE_DIR: /var/www/famousbooks      # nginx root bilan bir xil bo'lishi SHART
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Build
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      # API manzili nisbiy bo'lishi kerak — qotirilgan host bo'lsa deploy to'xtaydi
+      - name: Bundle tekshiruvi
+        run: |
+          if grep -rq "localhost:8080" dist/assets/; then
+            echo "::error::Bundle ichida localhost:8080 qotirilgan — VITE_API_BASE_URL ni tekshiring"
+            exit 1
+          fi
+
+      - name: SSH sozlash
+        run: |
+          mkdir -p ~/.ssh
+          # printf — kalit oxiridagi qator uzilishi saqlanadi, aks holda
+          # OpenSSH "invalid format" deydi
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Yuklash
+        run: |
+          # --delay-updates: yangi fayllar avval to'liq yuklanadi, keyin bir
+          #   vaqtda almashadi — deploy paytida yarim yangilangan sayt chiqmaydi
+          # --delete-after: eski fayllar almashtirishdan KEYIN o'chiriladi
+          rsync -avz --delay-updates --delete-after \
+            dist/ root@${{ secrets.SERVER_HOST }}:${{ env.REMOTE_DIR }}/
+
+      - name: Tekshirish
+        run: |
+          HOST="${{ secrets.SERVER_HOST }}"
+          ASSET=$(grep -o '/assets/[^"]*\.js' dist/index.html | head -1)
+
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://$HOST$ASSET" || true)
+            [ "$code" = "200" ] && echo "Yangi bundle berilyapti: $ASSET" && exit 0
+            echo "  urinish $i: HTTP $code — kutilyapti..."
+            sleep 3
+          done
+
+          echo "::error::Yangi bundle serverdan kelmadi ($ASSET). REMOTE_DIR nginx root bilan mos keladimi?"
+          exit 1
