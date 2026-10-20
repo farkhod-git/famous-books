@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, BookOpen, ChevronLeft, Loader, Star, Upload, X, Sparkles, ImagePlus,
+  Search, BookOpen, ChevronLeft, Loader, Star, Upload, X, Sparkles, ImagePlus, FileUp,
 } from "lucide-react";
 import { uploadFile } from "../api/attachments";
 import { createPost, changeActive } from "../api/posts";
 import { GENRES } from "../lib/genres";
+import { BOOK_FILE_ACCEPT, checkBookFile } from "../lib/bookFile";
+import { formatFileSize } from "../lib/format";
 
 const OL_COVER = (id) => `https://covers.openlibrary.org/b/id/${id}-M.jpg`;
 const OL_COVER_LARGE = (id) => `https://covers.openlibrary.org/b/id/${id}-L.jpg`;
@@ -32,6 +34,8 @@ export default function AddBook() {
 
   const [cover, setCover] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [bookFile, setBookFile] = useState(null);
+  const [bookFileError, setBookFileError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +44,7 @@ export default function AddBook() {
   const debounceRef = useRef(null);
   const coverInputRef = useRef(null);
   const photoInputRef = useRef(null);
+  const bookFileInputRef = useRef(null);
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
@@ -120,6 +125,16 @@ export default function AddBook() {
     setPhotos((prev) => [...prev, ...picked].slice(0, 6));
   }
 
+  function handleBookFile(event) {
+    const picked = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!picked) return;
+
+    const problem = checkBookFile(picked);
+    setBookFileError(problem || "");
+    setBookFile(problem ? null : picked);
+  }
+
   const canSubmit =
     form.bookName.trim() && form.readerScore > 0 && cover && !submitting;
 
@@ -139,6 +154,8 @@ export default function AddBook() {
         photoIds.push(uploaded.id);
       }
 
+      const bookFileId = bookFile ? (await uploadFile(bookFile)).id : undefined;
+
       const created = await createPost({
         bookName: form.bookName.trim(),
         author: form.author.trim(),
@@ -149,6 +166,7 @@ export default function AddBook() {
         readerScore: form.readerScore,
         coverId: coverAttachment.id,
         photoIds,
+        bookFileId,
       });
 
       /* Backend postni active=false holatida yaratadi va feed faqat
@@ -364,6 +382,43 @@ export default function AddBook() {
               )}
             </div>
             <input ref={photoInputRef} type="file" accept="image/*" multiple hidden onChange={handlePhotos} />
+          </div>
+
+          {/* KITOBNING ELEKTRON NUSXASI */}
+          <div className="form-group">
+            <label>Kitob fayli (ixtiyoriy)</label>
+            <p className="field-hint">
+              PDF, EPUB, FB2, DJVU, MOBI yoki TXT — 50 MB gacha.
+            </p>
+
+            {bookFile ? (
+              <div className="book-file-row">
+                <FileUp size={16} />
+                <span className="book-file-name">{bookFile.name}</span>
+                <span className="book-file-size">{formatFileSize(bookFile.size)}</span>
+                <button type="button" className="file-remove" onClick={() => setBookFile(null)}>
+                  <X size={14} /> O'chirish
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="file-pick small"
+                onClick={() => bookFileInputRef.current?.click()}
+              >
+                <FileUp size={15} /> Kitob faylini tanlang
+              </button>
+            )}
+
+            {bookFileError && <span className="field-error">{bookFileError}</span>}
+
+            <input
+              ref={bookFileInputRef}
+              type="file"
+              accept={BOOK_FILE_ACCEPT}
+              hidden
+              onChange={handleBookFile}
+            />
           </div>
 
           {/* BAHO */}

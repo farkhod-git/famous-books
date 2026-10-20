@@ -18,6 +18,13 @@ export function formatCount(n) {
   return String(value);
 }
 
+export function formatFileSize(bytes) {
+  const value = Number(bytes) || 0;
+  if (value >= 1024 * 1024) return (value / 1024 / 1024).toFixed(1).replace(".0", "") + " MB";
+  if (value >= 1024) return Math.round(value / 1024) + " KB";
+  return `${value} B`;
+}
+
 const UNITS = [
   { limit: 60, div: 1, suffix: "soniya oldin" },
   { limit: 3600, div: 60, suffix: "daqiqa oldin" },

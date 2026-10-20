@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PlusCircle, Eye, Heart, MessageCircle, Star, BookOpen, ToggleLeft, ToggleRight,
-  ChevronLeft, Loader, ImageOff, Info, Pencil,
+  ChevronLeft, Loader, ImageOff, Pencil,
 } from "lucide-react";
 import AuthImage from "../components/AuthImage";
 import BookDetail from "../components/BookDetail";
@@ -65,15 +65,6 @@ export default function MyPosts() {
         <h1 className="myposts-title">Mening postlarim</h1>
         <p className="myposts-subtitle">{posts.length} ta post joylangan</p>
       </header>
-
-      <p className="notice">
-        <Info size={15} />
-        <span>
-          GET /posts/my faqat faol postlarni qaytaradi, shuning uchun nofaol
-          qilingan post sahifa yangilangandan keyin bu ro'yxatdan yo'qoladi.
-          Postni tahrirlash va o'chirish endpointlari hali yo'q.
-        </span>
-      </p>
 
       {loading && (
         <p className="page-state">

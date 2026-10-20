@@ -4,6 +4,7 @@ import { Loader, LogIn } from "lucide-react";
 import Logo from "../components/Logo";
 import { useAuth } from "../hooks/useAuth";
 import GoogleButton from "../components/GoogleButton";
+import { emailError, passwordError, collect, PASSWORD_MIN, PASSWORD_MAX } from "../lib/validation";
 
 export default function Login() {
   const { login } = useAuth();
@@ -16,14 +17,31 @@ export default function Login() {
     params.get("error") === "oauth" ? "Google orqali kirish amalga oshmadi. Qaytadan urinib ko'ring." : ""
   );
   const resetDone = params.get("reset") === "ok";
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
 
   function handleChange(event) {
-    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: null } : prev));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    /* LoginDto da ham parol @Length(6, 20) — serverga bormasdan tekshiramiz. */
+    const invalid = collect({
+      email: emailError(form.email),
+      password: passwordError(form.password),
+    });
+
+    if (invalid) {
+      setFieldErrors(invalid);
+      setError("");
+      return;
+    }
+
+    setFieldErrors({});
     setBusy(true);
     setError("");
     try {
@@ -54,8 +72,10 @@ export default function Login() {
             value={form.email}
             onChange={handleChange}
             placeholder="siz@example.com"
+            aria-invalid={Boolean(fieldErrors.email)}
             required
           />
+          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
         </div>
 
         <div className="form-group">
@@ -68,8 +88,12 @@ export default function Login() {
             value={form.password}
             onChange={handleChange}
             placeholder="••••••••"
+            minLength={PASSWORD_MIN}
+            maxLength={PASSWORD_MAX}
+            aria-invalid={Boolean(fieldErrors.password)}
             required
           />
+          {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
         </div>
 
         {resetDone && !error && (

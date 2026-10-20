@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ChevronLeft, User, MapPin, Calendar, Mail, Camera, Save, Check, Loader, LogOut, Info,
+  ChevronLeft, User, MapPin, Calendar, Mail, Camera, Save, Check, Loader, LogOut,
 } from "lucide-react";
 import Avatar from "../components/Avatar";
 import { useAuth } from "../hooks/useAuth";
@@ -53,7 +53,7 @@ export default function Profile() {
       }
 
       if (!avatarId) {
-        setError("Avval profil rasmini tanlang — backend avatarsiz saqlamaydi.");
+        setError("Avval profil rasmini tanlang.");
         return;
       }
 
@@ -188,15 +188,6 @@ export default function Profile() {
               <><Save size={17} /> Saqlash</>
             )}
           </button>
-
-          <p className="notice">
-            <Info size={15} />
-            <span>
-              Email o'zgartirilmaydi — backend ProfileUpdateDto da bu maydon yo'q.
-              GET /users/me hozircha tokendagi ma'lumotni qaytargani uchun yangilangan
-              profil shu brauzerda saqlanadi.
-            </span>
-          </p>
 
           <button type="button" className="btn-logout wide" onClick={logout}>
             <LogOut size={16} /> Hisobdan chiqish

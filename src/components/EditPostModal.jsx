@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { X, Save, Loader, Star, ImagePlus, Trash2, Upload, Undo2 } from "lucide-react";
+import { X, Save, Loader, Star, ImagePlus, Trash2, Upload, Undo2, FileUp, Download } from "lucide-react";
 import AuthImage from "./AuthImage";
 import { getPost, updatePost, updatePhotos } from "../api/posts";
-import { uploadFile } from "../api/attachments";
+import { uploadFile, downloadUrl } from "../api/attachments";
 import { coverIdOf } from "../lib/post";
 import { GENRES } from "../lib/genres";
+import { BOOK_FILE_ACCEPT, checkBookFile } from "../lib/bookFile";
+import { formatFileSize } from "../lib/format";
 
 export default function EditPostModal({ post, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -23,7 +25,12 @@ export default function EditPostModal({ post, onClose, onSaved }) {
   const [newFiles, setNewFiles] = useState([]);   // yangi tanlangan fayllar
   const [loadingPhotos, setLoadingPhotos] = useState(true);
 
+  const [bookFileId, setBookFileId] = useState(post.bookFileId || null);
+  const [bookFile, setBookFile] = useState(null);   // yangi tanlangan kitob fayli
+  const [bookFileError, setBookFileError] = useState("");
+
   const coverInputRef = useRef(null);
+  const bookFileInputRef = useRef(null);
   const [hoverScore, setHoverScore] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +45,7 @@ export default function EditPostModal({ post, onClose, onSaved }) {
         if (!alive) return;
         setPhotos(full.photos || []);
         setCoverId(coverIdOf(full) || coverIdOf(post));
+        setBookFileId(full.bookFileId || post.bookFileId || null);
       } catch {
         /* rasmlarsiz ham tahrirlash mumkin */
       } finally {
@@ -85,6 +93,16 @@ export default function EditPostModal({ post, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleBookFile(event) {
+    const picked = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!picked) return;
+
+    const problem = checkBookFile(picked);
+    setBookFileError(problem || "");
+    setBookFile(problem ? null : picked);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!form.bookName.trim() || form.readerScore < 1 || saving) return;
@@ -94,6 +112,7 @@ export default function EditPostModal({ post, onClose, onSaved }) {
 
     try {
       const finalCoverId = coverFile ? (await uploadFile(coverFile)).id : coverId;
+      const finalBookFileId = bookFile ? (await uploadFile(bookFile)).id : bookFileId;
 
       const updated = await updatePost(post.id, {
         bookName: form.bookName.trim(),
@@ -104,6 +123,7 @@ export default function EditPostModal({ post, onClose, onSaved }) {
         genre: form.genre || null,
         readerScore: form.readerScore,
         coverId: finalCoverId,
+        bookFileId: finalBookFileId,
       });
 
       /* Rasmlar o'zgargan bo'lsa, yakuniy ro'yxatni yuboramiz. */
@@ -334,6 +354,66 @@ export default function EditPostModal({ post, onClose, onSaved }) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* KITOBNING ELEKTRON NUSXASI */}
+          <div className="form-group">
+            <label>Kitob fayli</label>
+            <p className="field-hint">
+              PDF, EPUB, FB2, DJVU, MOBI yoki TXT — 50 MB gacha.
+            </p>
+
+            {bookFile ? (
+              <div className="book-file-row">
+                <FileUp size={16} />
+                <span className="book-file-name">{bookFile.name}</span>
+                <span className="book-file-size">{formatFileSize(bookFile.size)}</span>
+                <button type="button" className="file-remove" onClick={() => setBookFile(null)}>
+                  <Undo2 size={14} /> Bekor qilish
+                </button>
+              </div>
+            ) : bookFileId ? (
+              <div className="book-file-row">
+                <FileUp size={16} />
+                <span className="book-file-name">Fayl biriktirilgan</span>
+                <a
+                  className="book-file-link"
+                  href={downloadUrl(bookFileId, { download: true })}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Download size={14} /> Yuklab olish
+                </a>
+                <button
+                  type="button"
+                  className="file-remove"
+                  onClick={() => bookFileInputRef.current?.click()}
+                >
+                  <Upload size={14} /> Boshqa fayl
+                </button>
+                <button type="button" className="file-remove" onClick={() => setBookFileId(null)}>
+                  <Trash2 size={14} /> O'chirish
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="file-pick small"
+                onClick={() => bookFileInputRef.current?.click()}
+              >
+                <FileUp size={15} /> Kitob faylini tanlang
+              </button>
+            )}
+
+            {bookFileError && <span className="field-error">{bookFileError}</span>}
+
+            <input
+              ref={bookFileInputRef}
+              type="file"
+              accept={BOOK_FILE_ACCEPT}
+              hidden
+              onChange={handleBookFile}
+            />
           </div>
 
           {error && <p className="auth-error">{error}</p>}

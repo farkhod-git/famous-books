@@ -5,6 +5,10 @@ import Logo from "../components/Logo";
 import { useAuth } from "../hooks/useAuth";
 import { useCountdown } from "../hooks/useCountdown";
 import CodeTimer from "../components/CodeTimer";
+import {
+  requiredError, emailError, passwordError, passwordMatchError, collect,
+  PASSWORD_MIN, PASSWORD_MAX, EMAIL_PATTERN,
+} from "../lib/validation";
 import GoogleButton from "../components/GoogleButton";
 
 const CODE_TTL_SECONDS = 120;
@@ -25,20 +29,35 @@ export default function Register() {
   });
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const { left, expired, restart } = useCountdown(CODE_TTL_SECONDS);
 
   function handleChange(event) {
-    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: null } : prev));
   }
 
   async function handleRegister(event) {
     event.preventDefault();
-    if (form.password !== form.prePassword) {
-      setError("Parollar bir xil emas");
+
+    /* Backend validatsiya xatosini tushunarsiz ko'rinishda qaytaradi,
+       shuning uchun qoidalarni shu yerda ham tekshiramiz. */
+    const invalid = collect({
+      firstname: requiredError(form.firstname, "Ism"),
+      email: emailError(form.email),
+      password: passwordError(form.password),
+      prePassword: passwordMatchError(form.password, form.prePassword),
+    });
+
+    if (invalid) {
+      setFieldErrors(invalid);
+      setError("");
       return;
     }
 
+    setFieldErrors({});
     setBusy(true);
     setError("");
     try {
@@ -137,7 +156,15 @@ export default function Register() {
         <div className="field-row">
           <div className="form-group">
             <label htmlFor="firstname">Ism *</label>
-            <input id="firstname" name="firstname" value={form.firstname} onChange={handleChange} required />
+            <input
+              id="firstname"
+              name="firstname"
+              value={form.firstname}
+              onChange={handleChange}
+              aria-invalid={Boolean(fieldErrors.firstname)}
+              required
+            />
+            {fieldErrors.firstname && <span className="field-error">{fieldErrors.firstname}</span>}
           </div>
           <div className="form-group">
             <label htmlFor="lastname">Familiya</label>
@@ -154,8 +181,11 @@ export default function Register() {
             autoComplete="email"
             value={form.email}
             onChange={handleChange}
+            pattern={EMAIL_PATTERN}
+            aria-invalid={Boolean(fieldErrors.email)}
             required
           />
+          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
         </div>
 
         <div className="field-row">
@@ -168,8 +198,16 @@ export default function Register() {
               autoComplete="new-password"
               value={form.password}
               onChange={handleChange}
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              aria-invalid={Boolean(fieldErrors.password)}
               required
             />
+            {fieldErrors.password ? (
+              <span className="field-error">{fieldErrors.password}</span>
+            ) : (
+              <span className="char-count">{PASSWORD_MIN}–{PASSWORD_MAX} ta belgi</span>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="pre-password">Parolni takrorlang *</label>
@@ -180,8 +218,12 @@ export default function Register() {
               autoComplete="new-password"
               value={form.prePassword}
               onChange={handleChange}
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              aria-invalid={Boolean(fieldErrors.prePassword)}
               required
             />
+            {fieldErrors.prePassword && <span className="field-error">{fieldErrors.prePassword}</span>}
           </div>
         </div>
 

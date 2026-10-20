@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  X, Heart, Star, BookOpen, Calendar, Hash, Eye, Loader, ImageOff, MessageCircle,
+  X, Heart, Star, BookOpen, Calendar, Hash, Eye, Loader, ImageOff, MessageCircle, Download,
 } from "lucide-react";
+import { downloadUrl } from "../api/attachments";
 import { coverIdOf } from "../lib/post";
 import AuthImage from "./AuthImage";
 import CommentSection from "./CommentSection";
@@ -146,6 +147,17 @@ export default function BookDetail({ postId, initialPost, liked, onClose, onLike
                 <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                 <span>{formatCount(post.likes)} ta like</span>
               </button>
+
+              {post.bookFileId && (
+                <a
+                  className="book-file-link"
+                  href={downloadUrl(post.bookFileId, { download: true })}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Download size={15} /> Kitobni yuklab olish
+                </a>
+              )}
             </aside>
 
             <div className="modal-right">

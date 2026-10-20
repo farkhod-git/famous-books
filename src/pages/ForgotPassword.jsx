@@ -4,6 +4,9 @@ import { KeyRound, Loader, ChevronLeft, MailCheck } from "lucide-react";
 import { forgetPassword, changePassword } from "../api/auth";
 import { useCountdown } from "../hooks/useCountdown";
 import CodeTimer from "../components/CodeTimer";
+import {
+  emailError, passwordError, passwordMatchError, collect, PASSWORD_MIN, PASSWORD_MAX,
+} from "../lib/validation";
 
 const CODE_TTL_SECONDS = 120;
 
@@ -15,11 +18,20 @@ export default function ForgotPassword() {
   const [code, setCode] = useState("");
   const [passwords, setPasswords] = useState({ newPassword: "", newPrePassword: "" });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const { left, expired, restart } = useCountdown(CODE_TTL_SECONDS);
 
   async function handleSendCode(event) {
     event.preventDefault();
+
+    const bad = emailError(email);
+    if (bad) {
+      setFieldErrors({ email: bad });
+      return;
+    }
+
+    setFieldErrors({});
     setBusy(true);
     setError("");
     try {
@@ -36,12 +48,20 @@ export default function ForgotPassword() {
   async function handleReset(event) {
     event.preventDefault();
 
-    /* Backend bu tekshiruvni qilmaydi, shuning uchun shu yerda qilamiz. */
-    if (passwords.newPassword !== passwords.newPrePassword) {
-      setError("Parollar bir xil emas");
+    /* ChangePasswordDto da uzunlik cheklovi yo'q, lekin login 6-20 talab
+       qiladi — qisqa parol qo'yilsa foydalanuvchi kira olmay qoladi. */
+    const invalid = collect({
+      newPassword: passwordError(passwords.newPassword),
+      newPrePassword: passwordMatchError(passwords.newPassword, passwords.newPrePassword),
+    });
+
+    if (invalid) {
+      setFieldErrors(invalid);
+      setError("");
       return;
     }
 
+    setFieldErrors({});
     setBusy(true);
     setError("");
     try {
@@ -88,12 +108,21 @@ export default function ForgotPassword() {
               type="password"
               autoComplete="new-password"
               value={passwords.newPassword}
-              onChange={(event) =>
-                setPasswords((prev) => ({ ...prev, newPassword: event.target.value }))
-              }
+              onChange={(event) => {
+                setPasswords((prev) => ({ ...prev, newPassword: event.target.value }));
+                setFieldErrors((prev) => ({ ...prev, newPassword: null }));
+              }}
               placeholder="••••••••"
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              aria-invalid={Boolean(fieldErrors.newPassword)}
               required
             />
+            {fieldErrors.newPassword ? (
+              <span className="field-error">{fieldErrors.newPassword}</span>
+            ) : (
+              <span className="char-count">{PASSWORD_MIN}–{PASSWORD_MAX} ta belgi</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -103,12 +132,19 @@ export default function ForgotPassword() {
               type="password"
               autoComplete="new-password"
               value={passwords.newPrePassword}
-              onChange={(event) =>
-                setPasswords((prev) => ({ ...prev, newPrePassword: event.target.value }))
-              }
+              onChange={(event) => {
+                setPasswords((prev) => ({ ...prev, newPrePassword: event.target.value }));
+                setFieldErrors((prev) => ({ ...prev, newPrePassword: null }));
+              }}
               placeholder="••••••••"
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              aria-invalid={Boolean(fieldErrors.newPrePassword)}
               required
             />
+            {fieldErrors.newPrePassword && (
+              <span className="field-error">{fieldErrors.newPrePassword}</span>
+            )}
           </div>
 
           <CodeTimer
@@ -159,11 +195,16 @@ export default function ForgotPassword() {
             type="email"
             autoComplete="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setFieldErrors({});
+            }}
             placeholder="siz@example.com"
+            aria-invalid={Boolean(fieldErrors.email)}
             required
             autoFocus
           />
+          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
         </div>
 
         {error && <p className="auth-error">{error}</p>}
