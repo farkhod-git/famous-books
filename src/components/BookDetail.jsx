@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import {
   X, Heart, Star, BookOpen, Calendar, Hash, Eye, Loader, ImageOff, MessageCircle, Download,
+  BookOpenCheck,
 } from "lucide-react";
 import { downloadUrl } from "../api/attachments";
+import BookFileViewer from "./BookFileViewer";
 import { coverIdOf } from "../lib/post";
 import AuthImage from "./AuthImage";
 import CommentSection from "./CommentSection";
@@ -15,6 +17,11 @@ export default function BookDetail({ postId, initialPost, liked, onClose, onLike
   const [loading, setLoading] = useState(!initialPost);
   const [error, setError] = useState("");
   const [commentCount, setCommentCount] = useState(initialPost?.comments ?? 0);
+  const [reading, setReading] = useState(false);
+
+  /* GET /posts/{id} bookFileId ni hozircha null qaytaradi, ro'yxatda esa
+     u to'g'ri keladi — shuning uchun ro'yxatdagi qiymatga qaytamiz. */
+  const bookFileId = post?.bookFileId || initialPost?.bookFileId || null;
 
   /* So'rov kelgunicha ro'yxatdagi holatni ko'rsatamiz. */
   const isLiked = post?.liked ?? liked;
@@ -148,15 +155,20 @@ export default function BookDetail({ postId, initialPost, liked, onClose, onLike
                 <span>{formatCount(post.likes)} ta like</span>
               </button>
 
-              {post.bookFileId && (
-                <a
-                  className="book-file-link"
-                  href={downloadUrl(post.bookFileId, { download: true })}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Download size={15} /> Kitobni yuklab olish
-                </a>
+              {bookFileId && (
+                <div className="book-file-cta">
+                  <button type="button" className="btn-read" onClick={() => setReading(true)}>
+                    <BookOpenCheck size={16} /> Saytda o'qish
+                  </button>
+                  <a
+                    className="book-file-link"
+                    href={downloadUrl(bookFileId, { download: true })}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Download size={15} /> Yuklab olish
+                  </a>
+                </div>
               )}
             </aside>
 
@@ -189,6 +201,14 @@ export default function BookDetail({ postId, initialPost, liked, onClose, onLike
           </div>
         )}
       </div>
+
+      {reading && bookFileId && (
+        <BookFileViewer
+          attachmentId={bookFileId}
+          title={post.bookName}
+          onClose={() => setReading(false)}
+        />
+      )}
     </div>
   );
 }

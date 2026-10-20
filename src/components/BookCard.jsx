@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Star, BookOpen, Eye, ImageOff } from "lucide-react";
+import { Heart, MessageCircle, Star, BookOpen, Eye, ImageOff, BookOpenCheck } from "lucide-react";
 import { coverIdOf } from "../lib/post";
 import AuthImage from "./AuthImage";
 import { formatCount, formatRelative } from "../lib/format";
@@ -29,6 +29,12 @@ export default function BookCard({ post, liked, onOpen, onLike }) {
           <BookOpen size={13} />
           {[post.author, post.pages && `${post.pages} bet`, post.year].filter(Boolean).join(" · ")}
         </p>
+
+        {post.bookFileId && (
+          <span className="book-card-file">
+            <BookOpenCheck size={13} /> O'qish mumkin
+          </span>
+        )}
 
         {post.opinion && <p className="book-card-review">“{post.opinion}”</p>}
 
